@@ -1,0 +1,192 @@
+# # services:
+# #   ph-db:
+# #     image: postgres:16-alpine
+# #     container_name: ph-db
+# #     restart: unless-stopped
+# #     environment:
+# #       POSTGRES_USER: postgres
+# #       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+# #       POSTGRES_DB: ph_health
+# #     volumes:
+# #       - ph-pg-data:/var/lib/postgresql/data
+# #     networks:
+# #       - ph-net
+# #     healthcheck:
+# #       test: ["CMD-SHELL", "pg_isready -U postgres -d ph_health"]
+# #       interval: 10s
+# #       timeout: 5s
+# #       retries: 10
+
+# #   ph-server:
+# #     image: ${REGISTRY}/${IMAGE_NAMESPACE}/ph-healthcare-server:${IMAGE_TAG}
+# #     container_name: ph-server
+# #     restart: unless-stopped
+# #     env_file:
+# #       - ./server/.env.production
+# #     depends_on:
+# #       ph-db:
+# #         condition: service_healthy
+# #     networks:
+# #       - ph-net
+# #     ports:
+# #       - "127.0.0.1:5000:5000"
+
+# #   ph-client:
+# #     image: ${REGISTRY}/${IMAGE_NAMESPACE}/ph-healthcare-client:${IMAGE_TAG}
+# #     container_name: ph-client
+# #     restart: unless-stopped
+# #     environment:
+# #       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+# #       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+# #     depends_on:
+# #       - ph-server
+# #     networks:
+# #       - ph-net
+# #     ports:
+# #       - "127.0.0.1:3000:3000"
+
+# # networks:
+# #   ph-net:
+# #     driver: bridge
+
+# # volumes:
+# #   ph-pg-data:
+  
+
+#   # docker run -d 
+# # --name mangoDB 
+# # --network mongo-net
+# # -p 27017:27017
+# # -e MONGO_INITDB_ROOT_USERNAME=admin
+# # -e MONGO_INTTDB_ROOT_PASSWORD=secret
+# # -v mongo-data:/data/db
+# # -restart always
+# # --health-cmd="monghosh --eval \"db.adminCommand('ping')\""\
+# # --health-interval=10s
+# # --health-timeout=5s
+# # --health-retries=5
+# # --health-start-period=20s
+# # mongo:7
+
+
+# services:
+#   mongodb:
+#     image: mongo:7
+#     container_name: mongoDB
+#     ports:
+#       - "27017:27017"
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: admin
+#       MONGO_INITDB_ROOT_PASSWORD: secret
+#     volumes:
+#       - mongo-data:/data/db
+#     networks:
+#       - mongo-net
+#     restart: always
+#     healthcheck:
+#       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#       start_period: 10s
+
+# networks:
+#   mongo-net:
+#     driver: bridge
+
+# volumes:
+#   mongo-data:
+
+
+
+
+
+
+
+
+
+
+
+
+services:
+  ph-db:
+    image: postgres:16-alpine
+    container_name: ph-db
+    restart: always
+    environment:
+      POSTGRES_USER: neondb_owner
+      POSTGRES_PASSWORD: npg_y4J0EdAefhYu
+      POSTGRES_DB: healthcare
+    ports:
+      - "5432:5432"
+    volumes:
+      - ph-pg-data:/var/lib/postgresql/data
+    networks:
+      - ph-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neondb_owner -d healthcare"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  ph-server:
+    container_name: ph-server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    environment:
+      DATABASE_URL: postgresql://neondb_owner:npg_y4J0EdAefhYu@ph-db:5432/healthcare
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "300"
+    working_dir: /app
+    volumes:
+      - ./server:/app
+      - server-node-modules:/app/node_modules
+      - server-logs:/app/logs
+    depends_on:
+      ph-db:
+        condition: service_healthy
+    networks:
+      - ph-net
+    command: sh -lc "CI=true pnpm install && pnpm prisma generate && pnpm prisma migrate deploy && pnpm dev"
+
+  ph-client:
+    container_name: ph-client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      ph-server:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./client/.env
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "300"
+      WEBPACK_POLLING: "true"
+    working_dir: /app
+    volumes:
+      - ./client:/app
+      - client-node-modules:/app/node_modules
+    networks:
+      - ph-net
+    command: sh -lc "CI=true pnpm install && pnpm dev"
+
+networks:
+  ph-net:
+    driver: bridge
+
+volumes:
+  ph-pg-data:
+  server-node-modules:
+  server-logs:
+  client-node-modules:
