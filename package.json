@@ -1,0 +1,22 @@
+{
+  "name": "docker-nginx-deployment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node init && concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"pnpm run dev:server\" \"pnpm run dev:client\"",
+    "dev:server": "node init && pnpm --dir server dev",
+    "dev:client": "node init && pnpm --dir client dev",
+    "build:server": "node init && pnpm --dir server build",
+    "build:client": "node init && pnpm --dir client build",
+    "install:server": "pnpm --dir server install",
+    "install:client": "pnpm --dir client install",
+    "install:all": "pnpm --dir server install && pnpm --dir client install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

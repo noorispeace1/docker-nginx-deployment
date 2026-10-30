@@ -14,8 +14,6 @@ coverage/
 *.tsbuildinfo
 
 # Environment files
-.env
-.env.*
 !.env.example
 
 # Secrets and sensitive input files
@@ -36,3 +34,4 @@ Thumbs.db
 
 
 README.HOSTINGER-VPS-NO-DOMAIN.md
+config.bat
